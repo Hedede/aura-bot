@@ -82,6 +82,39 @@ bool CBNCSUtilInterface::HELP_SID_AUTH_CHECK(const string& war3Path, const strin
     else
       return CaseInsensitiveFileExists(war3Path, "war3.exe");
   }();
+
+  if (war3Version >= 29) {
+    if (!FileWar3EXE.empty())
+    {
+      // TODO: check getExeInfo return value to ensure 1024 bytes was enough
+
+      char     buf[1024];
+      uint32_t EXEVersion;
+      uint32_t EXEVersionHash;
+
+      getExeInfo(FileWar3EXE.c_str(), buf, 1024, &EXEVersion, BNCSUTIL_PLATFORM_X86);
+      const char* files[] = { FileWar3EXE.c_str() };
+      checkRevision( valueStringFormula.c_str( ), files, 1, extractMPQNumber( mpqFileName.c_str( ) ), (unsigned long *)&EXEVersionHash );
+      m_EXEInfo        = buf;
+      m_EXEVersion     = CreateByteArray(EXEVersion, false);
+      m_EXEVersionHash = CreateByteArray(EXEVersionHash, false);
+      m_KeyInfoROC     = CreateKeyInfo(keyROC, ByteArrayToUInt32(clientToken, false), ByteArrayToUInt32(serverToken, false));
+      m_KeyInfoTFT     = CreateKeyInfo(keyTFT, ByteArrayToUInt32(clientToken, false), ByteArrayToUInt32(serverToken, false));
+
+      if (m_KeyInfoROC.size() == 36 && m_KeyInfoTFT.size() == 36)
+        return true;
+      else
+      {
+        if (m_KeyInfoROC.size() != 36)
+          Print("[BNCSUI] unable to create ROC key info - invalid ROC key");
+
+        if (m_KeyInfoTFT.size() != 36)
+          Print("[BNCSUI] unable to create TFT key info - invalid TFT key");
+      }
+    }
+    return false;
+  }
+
   const string FileStormDLL = CaseInsensitiveFileExists(war3Path, "storm.dll");
   const string FileGameDLL  = CaseInsensitiveFileExists(war3Path, "game.dll");
 
